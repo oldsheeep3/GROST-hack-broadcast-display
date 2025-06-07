@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI VTuber テスト用Webクライアント (ブロードキャスト対応)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-height: 800px;
+        }
+        .settings {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .settings-row {
+            display: flex;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .settings-label {
+            width: 150px;
+            font-weight: bold;
+        }
+        .chat-container {
+            flex-grow: 1;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow-y: auto;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .input-container {
+            display: flex;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .emotion-display {
+            margin-right: 15px;
+            font-weight: bold;
+            color: #666;
+            width: 150px;
+            display: flex;
+            align-items: center;
+        }
+        .emotion-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        #message-input {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .user-message {
+            background-color: #e3f2fd;
+            margin-left: 50px;
+            border-left: 4px solid #2196F3;
+        }
+        .agent-message {
+            background-color: #f1f8e9;
+            margin-right: 50px;
+            border-left: 4px solid #8bc34a;
+        }
+        .system-message {
+            background-color: #ffebee;
+            border-left: 4px solid #f44336;
+            font-style: italic;
+        }
+        .broadcast-message {
+            background-color: #f3e5f5;
+            border-left: 4px solid #9c27b0;
+            font-style: italic;
+        }
+        .sender {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+        }
+        .user-sender {
+            color: #2196F3;
+        }
+        .agent-sender {
+            color: #8bc34a;
+        }
+        .system-sender {
+            color: #f44336;
+        }
+        .broadcast-sender {
+            color: #9c27b0;
+        }
+        .message-text {
+            white-space: pre-wrap;
+        }
+        .emotion-indicator {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-left: 8px;
+            font-size: 12px;
+        }
+        /* 感情別の色とアイコン */
+        .emotion-joy {
+            background-color: #FFF176;
+            color: #F57F17;
+        }
+        .emotion-angry {
+            background-color: #EF5350;
+            color: white;
+        }
+        .emotion-sad {
+            background-color: #42A5F5;
+            color: white;
+        }
+        .emotion-surprise {
+            background-color: #AB47BC;
+            color: white;
+        }
+        .emotion-neutral {
+            background-color: #BDBDBD;
+            color: #424242;
+        }
+        /* 感情強度バー */
+        .emotion-strength-container {
+            width: 50px;
+            height: 8px;
+            background-color: #eee;
+            border-radius: 4px;
+            margin-left: 8px;
+            overflow: hidden;
+        }
+        .emotion-strength-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .audio-controls {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        .client-count {
+            font-size: 12px;
+            color: #666;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="settings">
+            <h2>接続設定</h2>
+            <div class="settings-row">
+                <div class="settings-label">API URL:</div>
+                <input type="text" id="api-url" value="http://localhost:8080" style="width: 250px;">
+            </div>
+            <div class="settings-row">
+                <div class="settings-label">WebSocket URL:</div>
+                <input type="text" id="ws-url" value="ws://localhost:8080/ws" style="width: 250px;">
+                <span id="client-count" class="client-count">クライアント情報なし</span>
+            </div>
+            <div class="settings-row">
+                <div class="settings-label">接続方法:</div>
+                <label>
+                    <input type="radio" name="connection-type" value="ws" checked> WebSocket
+                </label>
+                &nbsp;&nbsp;
+                <label>
+                    <input type="radio" name="connection-type" value="http"> HTTP API
+                </label>
+                &nbsp;&nbsp;
+                <button id="connect-button">接続</button>
+            </div>
+            <div class="settings-row">
+                <div class="settings-label">自律モード:</div>
+                <label>
+                    <input type="checkbox" id="autonomous-mode-toggle" checked> 有効
+                </label>
+                &nbsp;&nbsp;
+                <label>
+                    間隔: <input type="number" id="min-interval" value="30" min="10" max="300" style="width: 60px;"> - 
+                    <input type="number" id="max-interval" value="90" min="20" max="600" style="width: 60px;"> 秒
+                </label>
+                &nbsp;&nbsp;
+                <button id="apply-autonomous-settings">適用</button>
+            </div>
+        </div>
+
+        <div id="chat-container" class="chat-container"></div>
+
+        <div class="input-container">
+            <div id="emotion-display" class="emotion-display">
+                <div id="emotion-icon" class="emotion-icon emotion-neutral">😐</div>
+                <span id="emotion-text">neutral (0.50)</span>
+                <div class="emotion-strength-container">
+                    <div id="emotion-strength-bar" class="emotion-strength-bar" style="width: 50%; background-color: #BDBDBD;"></div>
+                </div>
+            </div>
+            <input type="text" id="message-input" placeholder="メッセージを入力..." autocomplete="off">
+            <button id="send-button">送信</button>
+        </div>
+    </div>
+
+    <script>
+        // 要素の参照を取得
+        const apiUrlInput = document.getElementById('api-url');
+        const wsUrlInput = document.getElementById('ws-url');
+        const connectButton = document.getElementById('connect-button');
+        const chatContainer = document.getElementById('chat-container');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const emotionDisplay = document.getElementById('emotion-display');
+        const emotionIcon = document.getElementById('emotion-icon');
+        const emotionText = document.getElementById('emotion-text');
+        const emotionStrengthBar = document.getElementById('emotion-strength-bar');
+        const connectionTypeRadios = document.getElementsByName('connection-type');
+        const autonomousModeToggle = document.getElementById('autonomous-mode-toggle');
+        const minIntervalInput = document.getElementById('min-interval');
+        const maxIntervalInput = document.getElementById('max-interval');
+        const applyAutonomousSettingsButton = document.getElementById('apply-autonomous-settings');
+        const clientCountSpan = document.getElementById('client-count');
+
+        // 感情タイプごとの絵文字とカラー
+        const emotionData = {
+            joy: { emoji: '😄', color: '#FFF176', textColor: '#F57F17' },
+            angry: { emoji: '😠', color: '#EF5350', textColor: 'white' },
+            sad: { emoji: '😢', color: '#42A5F5', textColor: 'white' },
+            surprise: { emoji: '😲', color: '#AB47BC', textColor: 'white' },
+            neutral: { emoji: '😐', color: '#BDBDBD', textColor: '#424242' }
+        };
+
+        // WebSocket接続
+        let ws = null;
+        let connected = false;
+
+        // 接続ボタンのイベントリスナー
+        connectButton.addEventListener('click', connect);
+
+        // 送信ボタンのイベントリスナー
+        sendButton.addEventListener('click', sendMessage);
+
+        // Enterキーで送信
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // 初期メッセージを表示
+        addSystemMessage('AI VTuber テスト用Webクライアント (ブロードキャスト対応) を起動しました');
+
+        // 接続関数
+        function connect() {
+            // 接続方法を取得（WebSocket or HTTP API）
+            let connectionType = 'ws';
+            for (const radio of connectionTypeRadios) {
+                if (radio.checked) {
+                    connectionType = radio.value;
+                    break;
+                }
+            }
+
+            if (connectionType === 'ws') {
+                connectWebSocket();
+            } else {
+                addSystemMessage(`HTTP APIモードで接続しました: ${apiUrlInput.value}`);
+            }
+        }
+
+        // WebSocket接続関数
+        function connectWebSocket() {
+            if (ws) {
+                ws.close();
+                connected = false;
+            }
+
+            try {
+                const wsUrl = wsUrlInput.value;
+                ws = new WebSocket(wsUrl);
+
+                ws.onopen = function(e) {
+                    connected = true;
+                    addSystemMessage(`WebSocketサーバーに接続しました: ${wsUrl}`);
+                };
+
+                ws.onmessage = function(event) {
+                    // バイナリデータ（音声）かテキストデータ（JSON）かを判別
+                    if (event.data instanceof Blob) {
+                        // バイナリデータ（音声データ）を受信
+                        handleAudioData(event.data);
+                    } else {
+                        // テキストデータ（JSONメッセージ）を受信
+                        try {
+                            const data = JSON.parse(event.data);
+                            handleJsonMessage(data);
+                        } catch (error) {
+                            addSystemMessage(`メッセージの解析エラー: ${error.message}`);
+                            console.error('Error parsing message:', error);
+                        }
+                    }
+                };
+
+                ws.onclose = function(event) {
+                    connected = false;
+                    addSystemMessage('WebSocket接続が閉じられました');
+                    clientCountSpan.textContent = 'クライアント情報なし';
+                };
+
+                ws.onerror = function(error) {
+                    connected = false;
+                    addSystemMessage(`WebSocketエラー: ${error.message || 'Unknown error'}`);
+                    console.error('WebSocket error:', error);
+                };
+
+            } catch (error) {
+                addSystemMessage(`WebSocket接続エラー: ${error.message}`);
+                console.error('WebSocket connection error:', error);
+            }
+        }
+
+        // JSONメッセージハンドラ
+        function handleJsonMessage(data) {
+            console.log('Received data:', data); // デバッグログを追加
+            
+            // 設定メッセージの場合
+            if (data.type === 'settings') {
+                addSystemMessage(`サーバー設定を受信しました: 自律モード=${data.autonomous_mode.enabled ? 'オン' : 'オフ'}`);
+                return;
+            }
+            
+            // 音声合成サーバーからのブロードキャストメッセージの場合
+            if (data.type === 'audio_request') {
+                addBroadcastMessage(`音声合成リクエスト: "${data.text}" (感情: ${data.emotion}) from ${data.requester}`);
+                return;
+            }
+            
+            if (data.type === 'audio_error') {
+                addBroadcastMessage(`音声合成エラー: ${data.error} from ${data.requester}`);
+                return;
+            }
+            
+            if (data.type === 'client_connected' || data.type === 'client_disconnected') {
+                const action = data.type === 'client_connected' ? '接続' : '切断';
+                addBroadcastMessage(`音声合成クライアント${action}: ${data.client_id} (総数: ${data.total_clients})`);
+                return;
+            }
+            
+            if (data.type === 'welcome') {
+                addBroadcastMessage(`音声合成サーバーからの歓迎メッセージ: ${data.message}`);
+                return;
+            }
+            
+            // エラーメッセージの場合
+            if (data.error) {
+                addSystemMessage(`エラー: ${data.error}`);
+                return;
+            }
+            
+            const text = data.text || 'メッセージを受信できませんでした';
+            
+            // function_callが含まれているかチェック
+            if (data.function_call) {
+                console.log('Function call received:', data.function_call);
+                // 表示のためにメッセージに追加
+                const functionText = `[Function: ${data.function_call.name}(${JSON.stringify(data.function_call.args)})]`;
+                addSystemMessage(functionText);
+            }
+            
+            // emotion フィールドの処理を修正
+            let emotionType = 'neutral';
+            let emotionStrength = 0.5;
+            
+            console.log('Original emotion data:', data.emotion); // デバッグログを追加
+            
+            if (data.emotion) {
+                // オブジェクトの場合（EmotionResponse型）
+                if (typeof data.emotion === 'object') {
+                    console.log('Emotion is object:', data.emotion); // デバッグログを追加
+                    if (data.emotion.emotion) {
+                        emotionType = data.emotion.emotion;
+                    }
+                    if (data.emotion.strength !== undefined && data.emotion.strength !== null) {
+                        let strength = parseFloat(data.emotion.strength);
+                        // NaNやInfinityのチェック
+                        emotionStrength = isFinite(strength) ? strength : 0.5;
+                        // 0〜1の範囲に制限
+                        emotionStrength = Math.max(0, Math.min(1, emotionStrength));
+                    }
+                } 
+                // 文字列の場合（後方互換性のため）
+                else if (typeof data.emotion === 'string') {
+                    emotionType = data.emotion;
+                }
+            }
+            
+            console.log(`Processed emotion: ${emotionType} (${emotionStrength})`); // デバッグログを追加
+
+            // 自律メッセージかどうかを確認
+            if (data.is_autonomous) {
+                addAutonomousMessage(text, emotionType, emotionStrength);
+            } else {
+                addAgentMessage(text, emotionType, emotionStrength);
+            }
+        }
+
+        // 音声データハンドラ
+        function handleAudioData(blob) {
+            addBroadcastMessage(`音声データを受信しました (サイズ: ${(blob.size / 1024).toFixed(2)} KB)`);
+
+            // BlobからURLを作成
+            const audioUrl = URL.createObjectURL(blob);
+
+            // 音声コントロールを作成
+            const audioControls = document.createElement('div');
+            audioControls.className = 'audio-controls';
+            
+            const controlsHtml = `
+                <audio controls style="width: 100%;" autoplay>
+                    <source src="${audioUrl}" type="audio/wav">
+                    お使いのブラウザは音声の再生をサポートしていません。
+                </audio>
+                <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                    音声合成サーバーからのブロードキャスト | 
+                    受信時刻: ${new Date().toLocaleTimeString()}
+                </div>
+            `;
+            
+            audioControls.innerHTML = controlsHtml;
+
+            // 最後のブロードキャストメッセージに音声コントロールを追加
+            const lastBroadcastMessage = chatContainer.querySelector('.broadcast-message:last-child');
+            if (lastBroadcastMessage) {
+                lastBroadcastMessage.appendChild(audioControls);
+            } else {
+                // フォールバック: 新しいメッセージを作成
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message broadcast-message';
+                messageDiv.innerHTML = `
+                    <div class="sender broadcast-sender">ブロードキャスト音声</div>
+                    <div class="message-text">音声合成サーバーから音声を受信</div>
+                `;
+                messageDiv.appendChild(audioControls);
+                chatContainer.appendChild(messageDiv);
+            }
+
+            // 自動スクロール
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            // URLを解放（メモリリーク防止）
+            const audio = audioControls.querySelector('audio');
+            if (audio) {
+                audio.addEventListener('ended', () => {
+                    setTimeout(() => URL.revokeObjectURL(audioUrl), 1000);
+                });
+            }
+        }
+
+        // メッセージ送信関数
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // 入力欄をクリア
+            messageInput.value = '';
+
+            // メッセージをチャット表示に追加
+            addUserMessage(message);
+
+            // 接続方法を取得
+            let connectionType = 'ws';
+            for (const radio of connectionTypeRadios) {
+                if (radio.checked) {
+                    connectionType = radio.value;
+                    break;
+                }
+            }
+
+            // メッセージを送信
+            if (connectionType === 'ws' && connected && ws) {
+                sendWebSocketMessage(message);
+            } else {
+                sendHttpMessage(message);
+            }
+        }
+
+        // WebSocket経由でメッセージを送信
+        function sendWebSocketMessage(message) {
+            try {
+                if (!connected) {
+                    addSystemMessage('WebSocketに接続されていません');
+                    return;
+                }
+
+                const data = {
+                    text: message
+                };
+                ws.send(JSON.stringify(data));
+            } catch (error) {
+                addSystemMessage(`メッセージ送信エラー: ${error.message}`);
+                console.error('Error sending message:', error);
+            }
+        }
+
+        // HTTP API経由でメッセージを送信
+        async function sendHttpMessage(message) {
+            try {
+                const apiUrl = `${apiUrlInput.value}/api/chat`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: message
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Received HTTP response:', data); // デバッグログを追加
+                    const text = data.text || 'メッセージを受信できませんでした';
+                    
+                    // function_callが含まれているかチェック
+                    if (data.function_call) {
+                        console.log('Function call received:', data.function_call);
+                        // 表示のためにメッセージに追加
+                        const functionText = `[Function: ${data.function_call.name}(${JSON.stringify(data.function_call.args)})]`;
+                        addSystemMessage(functionText);
+                    }
+                    
+                    // emotion フィールドの処理を修正
+                    let emotionType = 'neutral';
+                    let emotionStrength = 0.5;
+                    
+                    console.log('Original emotion data (HTTP):', data.emotion); // デバッグログを追加
+                    
+                    if (data.emotion) {
+                        // オブジェクトの場合（EmotionResponse型）
+                        if (typeof data.emotion === 'object') {
+                            console.log('Emotion is object (HTTP):', data.emotion); // デバッグログを追加
+                            if (data.emotion.emotion) {
+                                emotionType = data.emotion.emotion;
+                            }
+                            if (data.emotion.strength !== undefined && data.emotion.strength !== null) {
+                                let strength = parseFloat(data.emotion.strength);
+                                // NaNやInfinityのチェック
+                                emotionStrength = isFinite(strength) ? strength : 0.5;
+                                // 0〜1の範囲に制限
+                                emotionStrength = Math.max(0, Math.min(1, emotionStrength));
+                            }
+                        } 
+                        // 文字列の場合（後方互換性のため）
+                        else if (typeof data.emotion === 'string') {
+                            emotionType = data.emotion;
+                        }
+                    }
+                    
+                    console.log(`Processed emotion (HTTP): ${emotionType} (${emotionStrength})`); // デバッグログを追加
+
+                    addAgentMessage(text, emotionType, emotionStrength);
+                } else {
+                    const errorText = await response.text();
+                    addSystemMessage(`APIエラー: ${response.status} - ${errorText}`);
+                }
+            } catch (error) {
+                addSystemMessage(`HTTPリクエストエラー: ${error.message}`);
+                console.error('HTTP request error:', error);
+            }
+        }
+
+        // 感情表示を更新する関数
+        function updateEmotionDisplay(emotion, strength) {
+            console.log(`updateEmotionDisplay called with: ${emotion} (${strength})`); // デバッグログを追加
+            
+            // デフォルト値
+            let emotionInfo = emotionData.neutral;
+            
+            // 有効な感情タイプの場合
+            if (emotion in emotionData) {
+                emotionInfo = emotionData[emotion];
+            }
+            
+            // 数値として確実に処理するための追加処理
+            if (typeof strength !== 'number') {
+                strength = parseFloat(strength) || 0.5;
+            }
+            
+            // NaNやInfinityのチェック
+            if (!isFinite(strength)) {
+                strength = 0.5;
+            }
+            
+            // 0〜1の範囲に制限
+            strength = Math.max(0, Math.min(1, strength));
+            
+            console.log(`Final emotion values: ${emotion}, ${strength}`); // デバッグログを追加
+            
+            // 感情アイコンを更新
+            emotionIcon.textContent = emotionInfo.emoji;
+            emotionIcon.style.backgroundColor = emotionInfo.color;
+            emotionIcon.style.color = emotionInfo.textColor;
+            
+            // 感情クラスを更新（すべてのクラスをクリアしてから追加）
+            emotionIcon.className = 'emotion-icon';
+            emotionIcon.classList.add(`emotion-${emotion}`);
+            
+            // テキスト更新
+            emotionText.textContent = `${emotion} (${strength.toFixed(2)})`;
+            
+            // 強度バーを更新
+            emotionStrengthBar.style.width = `${strength * 100}%`;
+            emotionStrengthBar.style.backgroundColor = emotionInfo.color;
+        }
+
+        // システムメッセージを表示
+        function addSystemMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message system-message';
+
+            const senderDiv = document.createElement('div');
+            senderDiv.className = 'sender system-sender';
+            senderDiv.textContent = 'システム';
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text';
+            textDiv.textContent = message;
+
+            messageDiv.appendChild(senderDiv);
+            messageDiv.appendChild(textDiv);
+            chatContainer.appendChild(messageDiv);
+
+            // 自動スクロール
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // ブロードキャストメッセージを表示
+        function addBroadcastMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message broadcast-message';
+
+            const senderDiv = document.createElement('div');
+            senderDiv.className = 'sender broadcast-sender';
+            senderDiv.textContent = 'ブロードキャスト';
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text';
+            textDiv.textContent = message;
+
+            messageDiv.appendChild(senderDiv);
+            messageDiv.appendChild(textDiv);
+            chatContainer.appendChild(messageDiv);
+
+            // 自動スクロール
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // ユーザーメッセージを表示
+        function addUserMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user-message';
+
+            const senderDiv = document.createElement('div');
+            senderDiv.className = 'sender user-sender';
+            senderDiv.textContent = 'あなた';
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text';
+            textDiv.textContent = message;
+
+            messageDiv.appendChild(senderDiv);
+            messageDiv.appendChild(textDiv);
+            chatContainer.appendChild(messageDiv);
+
+            // 自動スクロール
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // エージェントメッセージを表示
+        function addAgentMessage(message, emotion = 'neutral', strength = 0.5) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message agent-message';
+
+            const senderDiv = document.createElement('div');
+            senderDiv.className = 'sender agent-sender';
+            senderDiv.textContent = 'こあら';
+            
+            // 感情インジケーターを追加
+            const emotionInfo = emotionData[emotion] || emotionData.neutral;
+            const emotionIndicator = document.createElement('div');
+            emotionIndicator.className = `emotion-indicator emotion-${emotion}`;
+            emotionIndicator.textContent = emotionInfo.emoji;
+            emotionIndicator.title = `${emotion} (${strength.toFixed(2)})`;
+            senderDiv.appendChild(emotionIndicator);
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text';
+            textDiv.textContent = message;
+
+            messageDiv.appendChild(senderDiv);
+            messageDiv.appendChild(textDiv);
+            chatContainer.appendChild(messageDiv);
+
+            // 感情表示を更新
+            updateEmotionDisplay(emotion, strength);
+
+            // 自動スクロール
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // 自律的なエージェントメッセージを表示
+        function addAutonomousMessage(message, emotion = 'neutral', strength = 0.5) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message agent-message';
+            // 自律メッセージ用のスタイルを追加
+            messageDiv.style.backgroundColor = '#E8F5E9';
+            messageDiv.style.borderLeft = '4px solid #66BB6A';
+
+            const senderDiv = document.createElement('div');
+            senderDiv.className = 'sender agent-sender';
+            senderDiv.textContent = 'こあら (自律)';
+            
+            // 感情インジケーターを追加
+            const emotionInfo = emotionData[emotion] || emotionData.neutral;
+            const emotionIndicator = document.createElement('div');
+            emotionIndicator.className = `emotion-indicator emotion-${emotion}`;
+            emotionIndicator.textContent = emotionInfo.emoji;
+            emotionIndicator.title = `${emotion} (${strength.toFixed(2)})`;
+            senderDiv.appendChild(emotionIndicator);
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text';
+            textDiv.textContent = message;
+
+            messageDiv.appendChild(senderDiv);
+            messageDiv.appendChild(textDiv);
+            chatContainer.appendChild(messageDiv);
+
+            // 感情表示を更新
+            updateEmotionDisplay(emotion, strength);
+
+            // 自動スクロール
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // 自律メッセージが表示されたときに効果音を鳴らす（オプション）
+            // playNotificationSound();
+        }
+
+        /* 効果音を鳴らす関数（オプション、コメントアウト状態） 
+        function playNotificationSound() {
+            try {
+                const audio = new Audio('notification.mp3'); // 適切な音声ファイルへのパス
+                audio.volume = 0.5; // 音量調整
+                audio.play();
+            } catch (error) {
+                console.error('効果音再生エラー:', error);
+            }
+        }
+        */
+
+        // 自律モード設定を適用するボタンのイベントリスナー
+        applyAutonomousSettingsButton.addEventListener('click', async function() {
+            const enabled = autonomousModeToggle.checked;
+            const minInterval = parseInt(minIntervalInput.value);
+            const maxInterval = parseInt(maxIntervalInput.value);
+            
+            // 値の検証
+            if (minInterval >= maxInterval) {
+                addSystemMessage('エラー: 最小間隔は最大間隔より小さくしてください');
+                return;
+            }
+            
+            if (minInterval < 10) {
+                addSystemMessage('エラー: 最小間隔は10秒以上にしてください');
+                return;
+            }
+            
+            try {
+                const apiUrl = `${apiUrlInput.value}/api/settings/autonomous`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        enabled: enabled,
+                        min_interval: minInterval,
+                        max_interval: maxInterval
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    addSystemMessage(`自律モード設定を更新しました: ${enabled ? 'オン' : 'オフ'} (${minInterval}-${maxInterval}秒)`);
+                } else {
+                    const errorText = await response.text();
+                    addSystemMessage(`設定更新エラー: ${response.status} - ${errorText}`);
+                }
+            } catch (error) {
+                addSystemMessage(`設定更新エラー: ${error.message}`);
+            }
+        });
+    </script>
+</body>
+</html> 
