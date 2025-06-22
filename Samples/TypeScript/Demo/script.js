@@ -6,7 +6,7 @@ function setupLiveChat() {
         return;
     }
 
-    const socket = io("http://minicpc:3031");
+    const socket = io("http://100.74.118.30:3031");
 
     console.log("[info] Trying to connect to live chat server...");
     socket.on("connect", () => {
