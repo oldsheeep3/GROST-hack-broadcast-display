@@ -97,8 +97,6 @@ export class LAppLive2DManager {
         projection.multiplyByMatrix(this._viewMatrix);
       }
     }
-  
-  
 
     model.update();
     model.draw(projection); // 参照渡しなのでprojectionは変質する。

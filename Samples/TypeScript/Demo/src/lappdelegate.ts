@@ -229,8 +229,8 @@ export class LAppDelegate {
    * Canvasを生成配置、Subdelegateを初期化する
    */
   private initializeSubdelegates(): void {
-    let width: number = 1000;
-    let height: number = 1500;
+    const width: number = 1000;
+    const height: number = 1500;
     // if (LAppDefine.CanvasNum > 3) {
     //   const widthunit: number = Math.ceil(Math.sqrt(LAppDefine.CanvasNum));
     //   const heightUnit = Math.ceil(LAppDefine.CanvasNum / widthunit);

@@ -18,7 +18,7 @@
   "include": [
     "src/**/*.ts",
     "../../../Core/*.ts"
-  ],
+, "src/livechat-client.js"  ],
   "exclude": [
     "node_modules",
     "dist"

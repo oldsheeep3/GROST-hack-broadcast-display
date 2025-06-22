@@ -22,7 +22,7 @@ export const ViewScale = 1.0;
 export const ViewMaxScale = 2.0;
 export const ViewMinScale = 0.8;
 
-export const ViewLogicalLeft = 0.5;    // 右端に寄せる
+export const ViewLogicalLeft = 0.5; // 右端に寄せる
 export const ViewLogicalRight = 1.5;
 export const ViewLogicalBottom = -0.2;
 export const ViewLogicalTop = 1.8;
@@ -47,9 +47,7 @@ export const PowerImageName = '';
 // モデル定義---------------------------------------------
 // モデルを配置したディレクトリ名の配列
 // ディレクトリ名とmodel3.jsonの名前を一致させておくこと
-export const ModelDir: string[] = [
-  'coala'
-];
+export const ModelDir: string[] = ['coala'];
 export const ModelDirSize: number = ModelDir.length;
 
 // 外部定義ファイル（json）と合わせる

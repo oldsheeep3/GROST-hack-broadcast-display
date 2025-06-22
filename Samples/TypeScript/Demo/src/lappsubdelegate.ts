@@ -90,7 +90,7 @@ export class LAppSubdelegate {
         this.resizeObserverCallback.call(this, entries, observer)
     );
     this._resizeObserver.observe(this._canvas);
-    
+
     return true;
   }
 

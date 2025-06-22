@@ -27,6 +27,7 @@ import {
   CubismMotionQueueEntryHandle,
   InvalidMotionQueueEntryHandleValue
 } from '@framework/motion/cubismmotionqueuemanager';
+import { CubismMotionManager } from '@framework/motion/cubismmotionmanager';
 import { csmMap } from '@framework/type/csmmap';
 import { csmRect } from '@framework/type/csmrectf';
 import { csmString } from '@framework/type/csmstring';
@@ -76,11 +77,12 @@ let latestLipSyncValue = 0;
 
 // voiceLevel.js からの音量イベントを受け取る
 window.addEventListener('voice-db', (e: any) => {
-    // dB値を0～1に正規化（例: -60dB～-10dBを0～1に）
-    const db = e.detail.db;
-    let norm = (db + 60) / 50;
-    norm = Math.max(0, Math.min(1, norm));
-    latestLipSyncValue = norm;
+  // dB値を0～1に正規化（例: -60dB～-10dBを0～1に）
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  const db = e.detail.db;
+  let norm = (db + 60) / 50;
+  norm = Math.max(0, Math.min(1, norm));
+  latestLipSyncValue = norm;
 });
 
 /**
@@ -534,6 +536,12 @@ export class LAppModel extends CubismUserModel {
         deltaTimeSeconds
       ); // モーションを更新
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    motionUpdated !=
+      this._changeExpressionMotionManager.updateMotion(
+        this._model,
+        deltaTimeSeconds
+      ); // <追加
     this._model.saveParameters(); // 状態を保存
     //--------------------------------------------------------------------------
 
@@ -583,8 +591,10 @@ export class LAppModel extends CubismUserModel {
     let tmpval2 = 0;
     if (this._lipsync) {
       let value = latestLipSyncValue; // リアルタイムでリップシンクを行う場合、システムから音量を取得して、0~1の範囲で値を入力します。
-      if(value !== 0 && tmpval === tmpval2 && tmpval === value){
-        value = 0;tmpval=0,tmpval2=0
+      if (value !== 0 && tmpval === tmpval2 && tmpval === value) {
+        value = 0;
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+        (tmpval = 0), (tmpval2 = 0);
       }
 
       for (let i = 0; i < this._lipSyncIds.getSize(); ++i) {
@@ -689,6 +699,37 @@ export class LAppModel extends CubismUserModel {
       autoDelete,
       priority
     );
+  }
+
+  // startMotionより複製して作成
+  public startHandMotion(
+    targetManage: CubismMotionManager,
+    group: string,
+    no: number,
+    priority: number
+  ): CubismMotionQueueEntryHandle {
+    if (priority == LAppDefine.PriorityForce) {
+      targetManage.setReservePriority(priority);
+    } else if (!targetManage.reserveMotion(priority)) {
+      if (this._debugMode) {
+        LAppPal.printMessage("[APP]can't start motion.");
+      }
+      return InvalidMotionQueueEntryHandleValue;
+    }
+
+    const fileName: string = this._modelSetting.getMotionFileName(group, no);
+    //ex) idle_0
+    const name: string = `${group}_${no}`;
+    const motion: CubismMotion = this._motions.getValue(name) as CubismMotion;
+    const autoDelete = false;
+    if (motion == null) {
+      // preLoadで読まれていない場合は再生しない
+      return InvalidMotionQueueEntryHandleValue;
+    }
+    if (this._debugMode) {
+      LAppPal.printMessage(`[APP]start motion: [${group}_${no}]`);
+    }
+    return targetManage.startMotionPriority(motion, autoDelete, priority);
   }
 
   /**
@@ -1000,6 +1041,8 @@ export class LAppModel extends CubismUserModel {
     this._allMotionCount = 0;
     this._wavFileHandler = new LAppWavFileHandler();
     this._consistency = false;
+
+    this._changeExpressionMotionManager = new CubismMotionManager(); // <<<追加！
   }
 
   private _subdelegate: LAppSubdelegate;
@@ -1031,4 +1074,6 @@ export class LAppModel extends CubismUserModel {
   _allMotionCount: number; // モーション総数
   _wavFileHandler: LAppWavFileHandler; //wavファイルハンドラ
   _consistency: boolean; // MOC3整合性チェック管理用
+
+  _changeExpressionMotionManager: CubismMotionManager; /// <<< 追加！
 }
