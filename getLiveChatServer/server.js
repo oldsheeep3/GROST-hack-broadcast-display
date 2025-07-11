@@ -12,7 +12,7 @@ console.log("Starting live chat server...");
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const liveChat = new LiveChat({ channelId: "UCuep1JCrMvSxOGgGhBfJuYw" });
+const liveChat = new LiveChat({ channelId: "UCK87kJ7mnqAjVZGPMx_xHsw" });
 
 const PORT = 3031;
 const INDEX = "/index.html";
