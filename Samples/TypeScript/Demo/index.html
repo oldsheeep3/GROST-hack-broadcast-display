@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TypeScript HTML App</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="./Core/live2dcubismcore.js"></script>
+  <script src="./src/main.ts" type="module"></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+  <div class="background">
+    <audio id="main-audio" style="width:100%" autoplay></audio>
+    <div id="main-canvas"></div>
+    <div id="comment">
+      <div id="comment-inner">
+      </div>
+    </div>
+  </div>
+  <script src="./voice.js"></script>
+  <script src="./voiceLevel.js"></script>
+  <script src="./setquery.js"></script>
+  <script src="/script.js"></script>
+</body>
+</html>

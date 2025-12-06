@@ -1,0 +1,158 @@
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;900&display=swap');
+
+:root {
+    --theme-color: #1e69fe;
+    --chat-font: "Zen Maru Gothic", sans-serif;
+}
+
+/* --- ベース設定 --- */
+html,
+body {
+    overflow: hidden;
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+    background: transparent;
+}
+* {
+    background: transparent;
+    font-family: "Noto Sans JP", "Noto Sans", sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    background: transparent;
+}
+
+/* --- 背景 --- */
+.background {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    margin: 0;
+    padding: 0;
+    background-image: url(./bg.png);
+    background-size: contain;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* --- メインキャンバス --- */
+#main-canvas > canvas {
+    width: 1000px;
+    height: 1500px;
+    right: 200px;
+    bottom: -600px;
+    position: absolute;
+    background: transparent;
+    display: block;
+}
+
+/* --- コメントエリア --- */
+#comment {
+    position: absolute;
+    width: 600px;
+    height: 630px;
+    top: 252px;
+    left: 100px;
+    overflow: hidden;
+    z-index: 10;
+    padding-bottom: 0.5rem;;
+}
+
+#comment-inner {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    bottom: 0;
+    width: 100%;
+    transition: transform 0.5s cubic-bezier(.4,0,.2,1);
+    will-change: transform;
+}
+
+/* --- コメントメッセージ --- */
+#comment-inner > div {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    animation: popInLeft 0.3s ease-out forwards;
+    gap: 0.25rem;
+}
+
+@keyframes popInLeft {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+.name {
+    display: block;
+    width: fit-content;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    background-color: var(--theme-color);
+    color: #fff;
+    font-size: 0.75rem;
+    margin-bottom: 8px;
+    margin-right: 8px;
+    font-weight: 700;
+}
+
+.msg {
+    background-color: #fff;
+    color: #333;
+    border-radius: 1rem;
+    border: 2px solid var(--theme-color);
+    padding: 0.25rem 1rem;
+    font-size: 16px;
+    font-weight: 500;
+    position: relative;
+    width: fit-content;
+    min-width: 2rem;
+    margin-right: auto;
+}
+
+.msg > p, .name > p {
+    font-size: 1em;
+    padding: 0.5em !important;
+    margin: 0;
+    font-weight: 900;
+    font-family: var(--chat-font);
+}
+
+/* --- 絵文字 --- */
+#comment-inner img {
+    height: 1.5rem;
+    vertical-align: middle;
+}
+
+/* --- スクロールバー非表示 --- */
+#comment-inner {
+    scrollbar-width: none;
+}
+#comment-inner::-webkit-scrollbar {
+    display: none;
+}
+
+/* --- その他不要な装飾をリセット --- */
+#comment-inner * {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}

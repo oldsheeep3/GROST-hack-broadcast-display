@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Style-Bert-VITS2 音声合成テストクライアント (ブロードキャスト対応)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-height: 800px;
+        }
+        .settings {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .settings-row {
+            display: flex;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .settings-label {
+            width: 120px;
+            font-weight: bold;
+        }
+        .client-info {
+            background-color: #e3f2fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            border-left: 4px solid #2196F3;
+        }
+        .log-container {
+            flex-grow: 1;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow-y: auto;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-height: 300px;
+        }
+        .input-container {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .input-row {
+            display: flex;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .input-label {
+            width: 80px;
+            font-weight: bold;
+        }
+        #text-input {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.generating {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .log-entry {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 4px solid #ddd;
+        }
+        .log-info {
+            background-color: #e3f2fd;
+            border-left-color: #2196F3;
+        }
+        .log-success {
+            background-color: #e8f5e9;
+            border-left-color: #4caf50;
+        }
+        .log-error {
+            background-color: #ffebee;
+            border-left-color: #f44336;
+        }
+        .log-warning {
+            background-color: #fff3e0;
+            border-left-color: #ff9800;
+        }
+        .log-broadcast {
+            background-color: #f3e5f5;
+            border-left-color: #9c27b0;
+        }
+        .log-request {
+            background-color: #fff8e1;
+            border-left-color: #ffc107;
+        }
+        .audio-controls {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        .audio-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .timestamp {
+            font-size: 11px;
+            color: #999;
+            float: right;
+        }
+        .requester-info {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            font-style: italic;
+        }
+        .client-count {
+            font-size: 12px;
+            color: #666;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="settings">
+            <h2>Style-Bert-VITS2 音声合成テストクライアント (ブロードキャスト対応)</h2>
+            <div class="settings-row">
+                <div class="settings-label">WebSocket URL:</div>
+                <input type="text" id="ws-url" value="ws://10.2.0.99:9000/vc" style="width: 300px;">
+                <button id="connect-button">接続</button>
+                <button id="disconnect-button" disabled>切断</button>
+                <span id="client-count" class="client-count">接続クライアント数: 0</span>
+            </div>
+            <div id="client-info" class="client-info" style="display: none;">
+                <strong>クライアントID:</strong> <span id="client-id">未接続</span>
+            </div>
+        </div>
+
+        <div id="status" class="status disconnected">
+            未接続
+        </div>
+
+        <div id="log-container" class="log-container"></div>
+
+        <div class="input-container">
+            <div class="input-row">
+                <div class="input-label">テキスト:</div>
+                <input type="text" id="text-input" placeholder="音声合成するテキストを入力..." value="こんにちは、元気ですか？">
+            </div>
+            <div class="input-row">
+                <div class="input-label">感情:</div>
+                <select id="emotion-select">
+                    <option value="neutral">neutral (ニュートラル)</option>
+                    <option value="joy">joy (喜び)</option>
+                    <option value="sad">sad (悲しみ)</option>
+                    <option value="angry">angry (怒り)</option>
+                    <option value="surprise">surprise (驚き)</option>
+                </select>
+                <button id="generate-button" disabled>音声生成</button>
+                <button id="clear-log-button">ログクリア</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 要素の参照を取得
+        const wsUrlInput = document.getElementById('ws-url');
+        const connectButton = document.getElementById('connect-button');
+        const disconnectButton = document.getElementById('disconnect-button');
+        const statusDiv = document.getElementById('status');
+        const logContainer = document.getElementById('log-container');
+        const textInput = document.getElementById('text-input');
+        const emotionSelect = document.getElementById('emotion-select');
+        const generateButton = document.getElementById('generate-button');
+        const clearLogButton = document.getElementById('clear-log-button');
+        const clientInfoDiv = document.getElementById('client-info');
+        const clientIdSpan = document.getElementById('client-id');
+        const clientCountSpan = document.getElementById('client-count');
+
+        // WebSocket接続
+        let ws = null;
+        let connected = false;
+        let myClientId = null;
+
+        // イベントリスナーを設定
+        connectButton.addEventListener('click', connect);
+        disconnectButton.addEventListener('click', disconnect);
+        generateButton.addEventListener('click', generateAudio);
+        clearLogButton.addEventListener('click', clearLog);
+
+        // Enterキーで音声生成
+        textInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !generateButton.disabled) {
+                generateAudio();
+            }
+        });
+
+        // 初期ログメッセージ
+        addLog('info', 'Style-Bert-VITS2 音声合成テストクライアント（ブロードキャスト対応）を起動しました');
+
+        // 接続関数
+        function connect() {
+            if (ws) {
+                ws.close();
+            }
+
+            try {
+                const wsUrl = wsUrlInput.value;
+                updateStatus('connecting', '接続中...');
+                addLog('info', `WebSocketサーバーに接続中: ${wsUrl}`);
+
+                ws = new WebSocket(wsUrl);
+
+                ws.onopen = function(e) {
+                    connected = true;
+                    updateStatus('connected', '接続済み');
+                    addLog('success', `WebSocketサーバーに接続しました: ${wsUrl}`);
+                    
+                    connectButton.disabled = true;
+                    disconnectButton.disabled = false;
+                    generateButton.disabled = false;
+                };
+
+                ws.onmessage = function(event) {
+                    if (event.data instanceof Blob) {
+                        // バイナリデータ（音声データ）を受信
+                        handleAudioData(event.data);
+                    } else {
+                        // テキストデータ（JSONメッセージ）を受信
+                        try {
+                            const data = JSON.parse(event.data);
+                            handleJsonMessage(data);
+                        } catch (error) {
+                            addLog('warning', `不明なメッセージを受信: ${event.data}`);
+                        }
+                    }
+                };
+
+                ws.onclose = function(event) {
+                    connected = false;
+                    myClientId = null;
+                    updateStatus('disconnected', '切断済み');
+                    addLog('warning', 'WebSocket接続が閉じられました');
+                    
+                    // UI状態をリセット
+                    connectButton.disabled = false;
+                    disconnectButton.disabled = true;
+                    generateButton.disabled = true;
+                    clientInfoDiv.style.display = 'none';
+                    updateClientCount(0);
+                };
+
+                ws.onerror = function(error) {
+                    connected = false;
+                    myClientId = null;
+                    updateStatus('disconnected', 'エラー');
+                    addLog('error', `WebSocketエラー: ${error.message || 'Unknown error'}`);
+                    
+                    connectButton.disabled = false;
+                    disconnectButton.disabled = true;
+                    generateButton.disabled = true;
+                };
+
+            } catch (error) {
+                updateStatus('disconnected', 'エラー');
+                addLog('error', `接続エラー: ${error.message}`);
+            }
+        }
+
+        // 切断関数
+        function disconnect() {
+            if (ws) {
+                ws.close();
+            }
+        }
+
+        // JSONメッセージハンドラ
+        function handleJsonMessage(data) {
+            switch (data.type) {
+                case 'welcome':
+                    myClientId = data.client_id;
+                    clientIdSpan.textContent = myClientId;
+                    clientInfoDiv.style.display = 'block';
+                    updateClientCount(data.total_clients);
+                    addLog('success', `${data.message} (ID: ${myClientId})`);
+                    break;
+                    
+                case 'client_connected':
+                    updateClientCount(data.total_clients);
+                    if (data.client_id !== myClientId) {
+                        addLog('info', `新しいクライアントが接続しました: ${data.client_id}`);
+                    }
+                    break;
+                    
+                case 'client_disconnected':
+                    updateClientCount(data.total_clients);
+                    addLog('info', `クライアントが切断しました: ${data.client_id}`);
+                    break;
+                    
+                case 'audio_request':
+                    const isMyRequest = data.requester === myClientId;
+                    const requesterText = isMyRequest ? '(あなた)' : '';
+                    addLog('request', 
+                        `音声生成リクエスト: "${data.text}" (感情: ${data.emotion}) by ${data.requester} ${requesterText}`
+                    );
+                    if (!isMyRequest) {
+                        updateStatus('generating', '他のクライアントが音声生成中...');
+                    }
+                    break;
+                    
+                case 'audio_error':
+                    const isMyError = data.requester === myClientId;
+                    const errorText = isMyError ? '(あなたのリクエスト)' : '';
+                    addLog('error', `音声生成エラー: ${data.error} by ${data.requester} ${errorText}`);
+                    updateStatus('connected', '接続済み');
+                    break;
+                    
+                default:
+                    if (data.error) {
+                        addLog('error', `サーバーエラー: ${data.error}`);
+                        updateStatus('connected', '接続済み（エラー発生）');
+                    } else {
+                        addLog('info', `未知のメッセージタイプ: ${data.type || 'unknown'}`);
+                    }
+                    break;
+            }
+        }
+
+        // 音声生成関数
+        function generateAudio() {
+            const text = textInput.value.trim();
+            const emotion = emotionSelect.value;
+
+            if (!text) {
+                addLog('warning', 'テキストを入力してください');
+                return;
+            }
+
+            if (!connected || !ws) {
+                addLog('error', 'WebSocketに接続されていません');
+                return;
+            }
+
+            try {
+                updateStatus('generating', '音声生成中...');
+                addLog('info', `音声生成を開始: "${text}" (感情: ${emotion})`);
+
+                const request = {
+                    text: text,
+                    emotion: emotion
+                };
+
+                ws.send(JSON.stringify(request));
+            } catch (error) {
+                updateStatus('connected', '接続済み（エラー発生）');
+                addLog('error', `音声生成エラー: ${error.message}`);
+            }
+        }
+
+        // 音声データを処理する関数
+        function handleAudioData(blob) {
+            updateStatus('connected', '接続済み');
+            addLog('broadcast', `音声データを受信しました (サイズ: ${blob.size} bytes)`);
+
+            // BlobからURLを作成
+            const audioUrl = URL.createObjectURL(blob);
+
+            // オーディオ要素を作成
+            const audio = new Audio(audioUrl);
+            
+            // 音声コントロールを作成
+            const audioControls = document.createElement('div');
+            audioControls.className = 'audio-controls';
+            
+            const controlsHtml = `
+                <audio controls style="width: 100%;" autoplay>
+                    <source src="${audioUrl}" type="audio/wav">
+                    お使いのブラウザは音声の再生をサポートしていません。
+                </audio>
+                <div class="audio-info">
+                    ファイルサイズ: ${(blob.size / 1024).toFixed(2)} KB | 
+                    受信時刻: ${new Date().toLocaleTimeString()} |
+                    ブロードキャスト音声
+                </div>
+            `;
+            
+            audioControls.innerHTML = controlsHtml;
+
+            // ログエントリを作成
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry log-broadcast';
+            
+            const timestamp = document.createElement('span');
+            timestamp.className = 'timestamp';
+            timestamp.textContent = new Date().toLocaleTimeString();
+            
+            const message = document.createElement('div');
+            message.textContent = '音声受信完了（ブロードキャスト）';
+            message.appendChild(timestamp);
+            
+            logEntry.appendChild(message);
+            logEntry.appendChild(audioControls);
+            
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+
+            // URLを解放（メモリリーク防止）
+            audio.addEventListener('ended', () => {
+                setTimeout(() => URL.revokeObjectURL(audioUrl), 1000);
+            });
+        }
+
+        // ステータス更新関数
+        function updateStatus(type, message) {
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+
+        // クライアント数更新関数
+        function updateClientCount(count) {
+            clientCountSpan.textContent = `接続クライアント数: ${count}`;
+        }
+
+        // ログ追加関数
+        function addLog(type, message) {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            // const logEntry = document.createElement('div');
+            // logEntry.className = `log-entry log-${type}`;
+            
+            // const timestamp = document.createElement('span');
+            // timestamp.className = 'timestamp';
+            // timestamp.textContent = new Date().toLocaleTimeString();
+            
+            // const messageDiv = document.createElement('div');
+            // messageDiv.textContent = message;
+            // messageDiv.appendChild(timestamp);
+            
+            // logEntry.appendChild(messageDiv);
+            // logContainer.appendChild(logEntry);
+            // logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // ログクリア関数
+        function clearLog() {
+            logContainer.innerHTML = '';
+            addLog('info', 'ログをクリアしました');
+        }
+    </script>
+</body>
+</html> 
