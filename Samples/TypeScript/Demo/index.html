@@ -5,22 +5,81 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TypeScript HTML App</title>
   <link rel="stylesheet" href="style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
   <script src="./Core/live2dcubismcore.js"></script>
   <script src="./src/main.ts" type="module"></script>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
   <div class="background">
+    <div id="video-container" style="position: absolute; top: 5%; left: 3%; max-width: 800px; height: 500px; z-index: 0;">
+      <video id="videoElement" style="max-width: 100%; height: 100%; object-fit: cover; border-radius: 30px;" controls muted autoplay playsinline></video>
+    </div>
+
     <audio id="main-audio" style="width:100%" autoplay></audio>
     <div id="main-canvas"></div>
     <div id="comment">
       <div id="comment-inner">
       </div>
     </div>
+    
+    <div id="unmute-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+      <button style="padding: 25px 45px; margin-bottom: 30%; font-size: 24px; font-weight: bold; background: #414141; color: white; border: none; border-radius: 50px; cursor: pointer;">
+        👆タップして配信を開始
+      </button>
+    </div>
+
+    <div id="tips">
+    </div>
   </div>
+
   <script src="./voice.js"></script>
   <script src="./voiceLevel.js"></script>
   <script src="./setquery.js"></script>
   <script src="/script.js"></script>
+
+  <script>
+    const video = document.getElementById('videoElement');
+    
+    const streamUrl = 'http://hlsvod.shugiintv.go.jp/vod/_definst_/amlst:2025/2025-1105-1300-00/playlist.m3u8'; 
+
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(streamUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, function() {
+        // 読み込み完了＆再生！
+        video.play().catch(e => console.log("自動再生ブロック（画面クリックで再生開始）"));
+      });
+    }
+    else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      // Safari用
+      video.src = streamUrl;
+      video.addEventListener('loadedmetadata', function() {
+        video.play();
+      });
+    }
+
+    // さっきのHLSのコードの下あたりに追加
+    const unmuteOverlay = document.getElementById('unmute-overlay');
+    const videoElement = document.getElementById('videoElement'); // ID合ってるか確認！
+
+    unmuteOverlay.addEventListener('click', function() {
+      // 1. ミュートを解除（これで音が出る！）
+      videoElement.muted = false;
+      videoElement.volume = 1.0; // 音量MAX
+
+      // 2. 念のため再生ボタンも押す
+      videoElement.play()
+        .then(() => console.log("音声再生スタート！"))
+        .catch(e => console.error("再生エラー:", e));
+
+      // 3. 邪魔なボタンを消す
+        unmuteOverlay.style.display = 'none';
+    });
+  </script>
+
 </body>
 </html>
