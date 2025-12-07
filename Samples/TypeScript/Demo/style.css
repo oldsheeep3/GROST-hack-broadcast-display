@@ -32,6 +32,49 @@ body {
     background: transparent;
 }
 
+/* ヘッダー */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 800px;
+    height: 40px;
+    padding: 5px 30px;
+    margin: 15px auto 0 auto;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    /*すりガラス風*/
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border-radius: 50px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+header nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+header nav .catchCopy {
+    color: #fff;
+    font-size: 10px;
+    font-weight: 500;
+}
+
+header #logo {
+    height: 25px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
 /* --- 背景 --- */
 .background {
     position: relative;
@@ -169,3 +212,17 @@ body {
     z-index: 20;
 }
 
+@media (max-width: 700px) {
+    #video-container {
+        min-width: 180px;
+        max-height: none;
+        display: flex;
+        justify-content: center;
+        top: 10%;
+    }
+
+    .background {
+        background-repeat: no-repeat;
+        background-size: cover;
+    }
+}
