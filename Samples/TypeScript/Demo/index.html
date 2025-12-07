@@ -45,12 +45,13 @@
   <script src="./voice.js"></script>
   <script src="./voiceLevel.js"></script>
   <script src="./setquery.js"></script>
-  <script src="/script.js"></script>
+  <!-- <script src="/script.js"></script> -->
 
   <script>
     const video = document.getElementById('videoElement');
-    
-    const streamUrl = 'http://hlsvod.shugiintv.go.jp/vod/_definst_/amlst:2025/2025-1105-1300-00/playlist.m3u8'; 
+    const streamUrl = 'http://100.79.67.103:1935/live/broadcast/playlist.m3u8';
+    // const streamUrl = 'http://100.79.67.103:1935/vod/mp4:sample.mp4/playlist.m3u8'
+    // const streamUrl = 'http://hlsvod.shugiintv.go.jp/vod/_definst_/amlst:2025/2025-1105-1300-00/playlist.m3u8'; 
 
     if (Hls.isSupported()) {
       const hls = new Hls();
